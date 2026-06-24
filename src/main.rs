@@ -349,6 +349,9 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    // Import RGB image structures used for test image generation.
+    use image::{Rgb, RgbImage};
     #[test]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     fn unit_test_x86() {
@@ -365,7 +368,22 @@ mod tests {
 
     #[test]
     fn unit_test_generic() {
-        // TODO
-        assert!(false);
+
+        // Case 1: two identical images.
+        // The L1 distance should be equal to 0.
+        let mut img1 = RgbImage::new(1, 1);
+        let mut img2 = RgbImage::new(1, 1);
+
+        img1.put_pixel(0, 0, Rgb([10, 20, 30]));
+        img2.put_pixel(0, 0, Rgb([10, 20, 30]));
+
+        assert_eq!(l1_generic(&img1, &img2), 0);
+
+        // Case 2: images with different RGB values.
+        // Expected distance:
+        // |10 - 15| + |20 - 25| + |30 - 35| = 15
+        img2.put_pixel(0, 0, Rgb([15, 25, 35]));
+
+        assert_eq!(l1_generic(&img1, &img2), 15);
     }
 }
