@@ -426,4 +426,29 @@ mod tests {
 
         assert_eq!(l1_generic(&img1, &img2), 15);
     }
+
+        #[test]
+    fn unit_test_prepare_target() {
+        use std::fs;
+
+        // Create a temporary image whose dimensions are not multiples of tile_size.
+        let input_path = "test_prepare_target.png";
+        let image = RgbImage::from_pixel(7, 5, Rgb([255, 0, 0]));
+        image.save(input_path).unwrap();
+
+        let tile_size = Size {
+            width: 3,
+            height: 2,
+        };
+
+        let result = prepare_target(input_path, 2, &tile_size).unwrap();
+
+        // Original size: 7x5
+        // Cropped size: 6x4
+        // Scaled x2: 12x8
+        assert_eq!(result.width(), 12);
+        assert_eq!(result.height(), 8);
+
+        fs::remove_file(input_path).unwrap();
+    }
 }
