@@ -451,4 +451,37 @@ mod tests {
 
         fs::remove_file(input_path).unwrap();
     }
+
+    #[test]
+    fn unit_test_prepare_tiles() {
+        use std::fs;
+
+        let tiles_dir = "test_tiles";
+        fs::create_dir_all(tiles_dir).unwrap();
+
+        // Create two images with different sizes.
+        let tile1 = RgbImage::from_pixel(10, 10, Rgb([255, 0, 0]));
+        let tile2 = RgbImage::from_pixel(20, 20, Rgb([0, 255, 0]));
+
+        tile1.save(format!("{}/tile1.png", tiles_dir)).unwrap();
+        tile2.save(format!("{}/tile2.png", tiles_dir)).unwrap();
+
+        let tile_size = Size {
+            width: 5,
+            height: 5,
+        };
+
+        let tiles = prepare_tiles(tiles_dir, &tile_size, false).unwrap();
+
+        // Two images should be loaded.
+        assert_eq!(tiles.len(), 2);
+
+        // All images should be resized to 5x5.
+        for tile in tiles {
+            assert_eq!(tile.width(), 5);
+            assert_eq!(tile.height(), 5);
+        }
+
+        fs::remove_dir_all(tiles_dir).unwrap();
+    }
 }
