@@ -349,23 +349,139 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    // Import RGB image structures used for test image generation.
+    use image::{Rgb, RgbImage};
+
+
     #[test]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     fn unit_test_x86() {
-        // TODO
-        assert!(false);
+
+        // Case 1: same image.
+        // The L1 distance of an image with itself must be 0.
+        let im = RgbImage::from_pixel(5, 5, Rgb([100, 150, 200]));
+        assert_eq!(unsafe { l1_x86_sse2(&im, &im) }, 0);
+
+        // Case 2: known distance.
+        // 5x5 pixels * (|1-0| + |1-0| + |1-0|) = 75.
+        let im1 = RgbImage::from_pixel(5, 5, Rgb([0, 0, 0]));
+        let im2 = RgbImage::from_pixel(5, 5, Rgb([1, 1, 1]));
+        assert_eq!(unsafe { l1_x86_sse2(&im1, &im2) }, 75);
+
+        // Case 3: compare SSE2 result with the generic implementation.
+        // The optimized version must return the same distance.
+        let im1 = RgbImage::from_pixel(5, 5, Rgb([10, 20, 30]));
+        let im2 = RgbImage::from_pixel(5, 5, Rgb([40, 80, 120]));
+
+        let generic = l1_generic(&im1, &im2);
+        let sse2 = unsafe { l1_x86_sse2(&im1, &im2) };
+
+        assert_eq!(sse2, generic);
     }
 
     #[test]
     #[cfg(target_arch = "aarch64")]
     fn unit_test_aarch64() {
-        // TODO
-        assert!(false);
+
+        // Case 1: same image.
+        // The L1 distance of an image with itself must be 0.
+        let im = RgbImage::from_pixel(5, 5, Rgb([100, 150, 200]));
+        assert_eq!(unsafe { l1_neon(&im, &im) }, 0);
+
+        // Case 2: known distance.
+        // 5x5 pixels * (|1-0| + |1-0| + |1-0|) = 75.
+        let im1 = RgbImage::from_pixel(5, 5, Rgb([0, 0, 0]));
+        let im2 = RgbImage::from_pixel(5, 5, Rgb([1, 1, 1]));
+        assert_eq!(unsafe { l1_neon(&im1, &im2) }, 75);
+
+        // Case 3: compare NEON result with the generic implementation.
+        // The optimized version must return the same distance.
+        let im1 = RgbImage::from_pixel(5, 5, Rgb([10, 20, 30]));
+        let im2 = RgbImage::from_pixel(5, 5, Rgb([40, 80, 120]));
+
+        let generic = l1_generic(&im1, &im2);
+        let neon = unsafe { l1_neon(&im1, &im2) };
+
+        assert_eq!(neon, generic);
     }
 
     #[test]
     fn unit_test_generic() {
-        // TODO
-        assert!(false);
+
+        // Case 1: two identical images.
+        // The L1 distance should be equal to 0.
+        let mut img1 = RgbImage::new(1, 1);
+        let mut img2 = RgbImage::new(1, 1);
+
+        img1.put_pixel(0, 0, Rgb([10, 20, 30]));
+        img2.put_pixel(0, 0, Rgb([10, 20, 30]));
+
+        assert_eq!(l1_generic(&img1, &img2), 0);
+
+        // Case 2: images with different RGB values.
+        // Expected distance:
+        // |10 - 15| + |20 - 25| + |30 - 35| = 15
+        img2.put_pixel(0, 0, Rgb([15, 25, 35]));
+
+        assert_eq!(l1_generic(&img1, &img2), 15);
+    }
+
+        #[test]
+    fn unit_test_prepare_target() {
+        use std::fs;
+
+        // Create a temporary image whose dimensions are not multiples of tile_size.
+        let input_path = "test_prepare_target.png";
+        let image = RgbImage::from_pixel(7, 5, Rgb([255, 0, 0]));
+        image.save(input_path).unwrap();
+
+        let tile_size = Size {
+            width: 3,
+            height: 2,
+        };
+
+        let result = prepare_target(input_path, 2, &tile_size).unwrap();
+
+        // Original size: 7x5
+        // Cropped size: 6x4
+        // Scaled x2: 12x8
+        assert_eq!(result.width(), 12);
+        assert_eq!(result.height(), 8);
+
+        fs::remove_file(input_path).unwrap();
+    }
+
+    #[test]
+    fn unit_test_prepare_tiles() {
+        use std::fs;
+
+        let tiles_dir = "test_tiles";
+        fs::create_dir_all(tiles_dir).unwrap();
+
+        // Create two images with different sizes.
+        let tile1 = RgbImage::from_pixel(10, 10, Rgb([255, 0, 0]));
+        let tile2 = RgbImage::from_pixel(20, 20, Rgb([0, 255, 0]));
+
+        tile1.save(format!("{}/tile1.png", tiles_dir)).unwrap();
+        tile2.save(format!("{}/tile2.png", tiles_dir)).unwrap();
+
+        let tile_size = Size {
+            width: 5,
+            height: 5,
+        };
+
+        let tiles = prepare_tiles(tiles_dir, &tile_size, false).unwrap();
+
+        // Two images should be loaded.
+        assert_eq!(tiles.len(), 2);
+
+        // All images should be resized to 5x5.
+        for tile in tiles {
+            assert_eq!(tile.width(), 5);
+            assert_eq!(tile.height(), 5);
+        }
+
+        fs::remove_dir_all(tiles_dir).unwrap();
     }
 }
