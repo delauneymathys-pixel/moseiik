@@ -352,11 +352,32 @@ mod tests {
     use super::*;
     // Import RGB image structures used for test image generation.
     use image::{Rgb, RgbImage};
+
+    
     #[test]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     fn unit_test_x86() {
-        // TODO
-        assert!(false);
+
+        // Case 1: same image.
+        // The L1 distance of an image with itself must be 0.
+        let im = RgbImage::from_pixel(5, 5, Rgb([100, 150, 200]));
+        assert_eq!(unsafe { l1_x86_sse2(&im, &im) }, 0);
+
+        // Case 2: known distance.
+        // 5x5 pixels * (|1-0| + |1-0| + |1-0|) = 75.
+        let im1 = RgbImage::from_pixel(5, 5, Rgb([0, 0, 0]));
+        let im2 = RgbImage::from_pixel(5, 5, Rgb([1, 1, 1]));
+        assert_eq!(unsafe { l1_x86_sse2(&im1, &im2) }, 75);
+
+        // Case 3: compare SSE2 result with the generic implementation.
+        // The optimized version must return the same distance.
+        let im1 = RgbImage::from_pixel(5, 5, Rgb([10, 20, 30]));
+        let im2 = RgbImage::from_pixel(5, 5, Rgb([40, 80, 120]));
+
+        let generic = l1_generic(&im1, &im2);
+        let sse2 = unsafe { l1_x86_sse2(&im1, &im2) };
+
+        assert_eq!(sse2, generic);
     }
 
     #[test]
