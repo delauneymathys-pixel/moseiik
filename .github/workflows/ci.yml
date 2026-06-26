@@ -33,4 +33,4 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run --rm moseiik-test
+          docker run --rm --platform ${{ matrix.platform }} moseiik-test
