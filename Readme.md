@@ -1,4 +1,5 @@
 # Projet Qualité Logiciel
+[![CI](https://github.com/delauneymathys-pixel/moseiik/actions/workflows/ci.yml/badge.svg)](https://github.com/delauneymathys-pixel/moseiik/actions/workflows/ci.yml)
 
 Moseiik est un projet qui permet de générer des mosaïques d'images à partir d'un corpus de vignettes (appelées tiles) et d'une image de référence (appelée target).
 
@@ -111,3 +112,8 @@ Cette CI va être composée de 4 étapes majeures :
 4. Exécution de l'image Docker pour lancer les tests.
 
 Le déroulement de ce workflow Github Actions doit normalement être très similaire à l'exécution des tests dans un conteneur local.
+## Documentation
+
+Les explications détaillées du projet sont disponibles dans le Wiki du dépôt :
+
+https://github.com/delauneymathys-pixel/moseiik/wiki
